@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Invaders</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        
+        #gameCanvas {
+            border: 2px solid #0f0;
+            background: #000;
+            box-shadow: 0 0 20px #0f0;
+        }
+        
+        .game-ui {
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .score {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .controls {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            color: #f00;
+            text-align: center;
+            display: none;
+            z-index: 10;
+        }
+        
+        .game-over button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 18px;
+            font-family: inherit;
+            cursor: pointer;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+        
+        .game-over button:hover {
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-ui">
+        <div class="score">SCORE: <span id="score">0</span></div>
+        <div class="controls">Use A/D or ←/→ to move, SPACE to shoot</div>
+    </div>
+    
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    
+    <div class="game-over" id="gameOver">
+        <div>GAME OVER</div>
+        <div id="finalScore"></div>
+        <button onclick="restartGame()">PLAY AGAIN</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const gameOverElement = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+
+        // Game state
+        let gameRunning = true;
+        let score = 0;
+        let lastTime = 0;
+
+        // Player
+        const player = {
+            x: canvas.width / 2 - 25,
+            y: canvas.height - 60,
+            width: 50,
+            height: 30,
+            speed: 300,
+            color: '#0f0'
+        };
+
+        // Bullets
+        let bullets = [];
+        let enemyBullets = [];
+        const bulletSpeed = 500;
+        const bulletWidth = 4;
+        const bulletHeight = 10;
+
+        // Invaders
+        let invaders = [];
+        const invaderRows = 5;
+        const invaderCols = 10;
+        const invaderWidth = 40;
+        const invaderHeight = 30;
+        let invaderSpeed = 50;
+        let invaderDirection = 1;
+        let invaderDropDistance = 20;
+
+        // Input handling
+        const keys = {};
+        let canShoot = true;
+        const shootCooldown = 200; // ms
+
+        // Initialize invaders
+        function createInvaders() {
+            invaders = [];
+            for (let row = 0; row < invaderRows; row++) {
+                for (let col = 0; col < invaderCols; col++) {
+                    invaders.push({
+                        x: col * (invaderWidth + 10) + 50,
+                        y: row * (invaderHeight + 10) + 50,
+                        width: invaderWidth,
+                        height: invaderHeight,
+                        alive: true,
+                        type: row < 2 ? 'fast' : 'normal'
+                    });
+                }
+            }
+        }
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if (e.code === 'Space') {
+                e.preventDefault();
+                shoot();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        // Shooting
+        function shoot() {
+            if (canShoot && gameRunning) {
+                bullets.push({
+                    x: player.x + player.width / 2 - bulletWidth / 2,
+                    y: player.y,
+                    width: bulletWidth,
+                    height: bulletHeight
+                });
+                canShoot = false;
+                setTimeout(() => canShoot = true, shootCooldown);
+            }
+        }
+
+        // Enemy shooting
+        function enemyShoot() {
+            if (Math.random() < 0.002 && invaders.length > 0) {
+                const aliveInvaders = invaders.filter(inv => inv.alive);
+                if (aliveInvaders.length > 0) {
+                    const shooter = aliveInvaders[Math.floor(Math.random() * aliveInvaders.length)];
+                    enemyBullets.push({
+                        x: shooter.x + shooter.width / 2 - bulletWidth / 2,
+                        y: shooter.y + shooter.height,
+                        width: bulletWidth,
+                        height: bulletHeight
+                    });
+                }
+            }
+        }
+
+        // Update game objects
+        function update(deltaTime) {
+            if (!gameRunning) return;
+
+            // Update player
+            if ((keys['KeyA'] || keys['ArrowLeft']) && player.x > 0) {
+                player.x -= player.speed * deltaTime;
+            }
+            if ((keys['KeyD'] || keys['ArrowRight']) && player.x < canvas.width - player.width) {
+                player.x += player.speed * deltaTime;
+            }
+
+            // Update bullets
+            bullets = bullets.filter(bullet => {
+                bullet.y -= bulletSpeed * deltaTime;
+                return bullet.y > -bullet.height;
+            });
+
+            enemyBullets = enemyBullets.filter(bullet => {
+                bullet.y += bulletSpeed * deltaTime;
+                return bullet.y < canvas.height;
+            });
+
+            // Update invaders
+            let moveDown = false;
+            const aliveInvaders = invaders.filter(inv => inv.alive);
+            
+            if (aliveInvaders.length > 0) {
+                const leftMost = Math.min(...aliveInvaders.map(inv => inv.x));
+                const rightMost = Math.max(...aliveInvaders.map(inv => inv.x + inv.width));
+                
+                if ((rightMost >= canvas.width - 10 && invaderDirection === 1) || 
+                    (leftMost <= 10 && invaderDirection === -1)) {
+                    invaderDirection *= -1;
+                    moveDown = true;
+                }
+            }
+
+            invaders.forEach(invader => {
+                if (invader.alive) {
+                    if (moveDown) {
+                        invader.y += invaderDropDistance;
+                    } else {
+                        invader.x += invaderSpeed * invaderDirection * deltaTime;
+                    }
+                }
+            });
+
+            // Collision detection - bullets vs invaders
+            bullets.forEach((bullet, bulletIndex) => {
+                invaders.forEach((invader, invaderIndex) => {
+                    if (invader.alive && 
+                        bullet.x < invader.x + invader.width &&
+                        bullet.x + bullet.width > invader.x &&
+                        bullet.y < invader.y + invader.height &&
+                        bullet.y + bullet.height > invader.y) {
+                        
+                        invader.alive = false;
+                        bullets.splice(bulletIndex, 1);
+                        score += invader.type === 'fast' ? 20 : 10;
+                        scoreElement.textContent = score;
+                    }
+                });
+            });
+
+            // Collision detection - enemy bullets vs player
+            enemyBullets.forEach((bullet, bulletIndex) => {
+                if (bullet.x < player.x + player.width &&
+                    bullet.x + bullet.width > player.x &&
+                    bullet.y < player.y + player.height &&
+                    bullet.y + bullet.height > player.y) {
+                    
+                    gameOver();
+                }
+            });
+
+            // Check if invaders reached player
+            invaders.forEach(invader => {
+                if (invader.alive && invader.y + invader.height >= player.y) {
+                    gameOver();
+                }
+            });
+
+            // Enemy shooting
+            enemyShoot();
+
+            // Check win condition
+            if (invaders.every(inv => !inv.alive)) {
+                // Increase difficulty and spawn new wave
+                invaderSpeed += 20;
+                createInvaders();
+                bullets = [];
+                enemyBullets = [];
+            }
+        }
+
+        // Render game
+        function render() {
+            // Clear canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw stars
+            for (let i = 0; i < 50; i++) {
+                const x = (i * 37) % canvas.width;
+                const y = (i * 73) % canvas.height;
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(x, y, 1, 1);
+            }
+
+            // Draw player
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            
+            // Draw player details
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(player.x + 20, player.y - 5, 10, 5); // cannon
+
+            // Draw bullets
+            ctx.fillStyle = '#ff0';
+            bullets.forEach(bullet => {
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            });
+
+            // Draw enemy bullets
+            ctx.fillStyle = '#f0f';
+            enemyBullets.forEach(bullet => {
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            });
+
+            // Draw invaders
+            invaders.forEach(invader => {
+                if (invader.alive) {
+                    ctx.fillStyle = invader.type === 'fast' ? '#f00' : '#0ff';
+                    ctx.fillRect(invader.x, invader.y, invader.width, invader.height);
+                    
+                    // Draw invader details
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(invader.x + 10, invader.y + 8, 6, 6); // left eye
+                    ctx.fillRect(invader.x + 24, invader.y + 8, 6, 6); // right eye
+                    ctx.fillRect(invader.x + 16, invader.y + 20, 8, 4); // mouth
+                }
+            });
+        }
+
+        // Game over
+        function gameOver() {
+            gameRunning = false;
+            finalScoreElement.textContent = `Final Score: ${score}`;
+            gameOverElement.style.display = 'block';
+        }
+
+        // Restart game
+        function restartGame() {
+            gameRunning = true;
+            score = 0;
+            scoreElement.textContent = score;
+            gameOverElement.style.display = 'none';
+            
+            // Reset player
+            player.x = canvas.width / 2 - 25;
+            player.y = canvas.height - 60;
+            
+            // Reset game objects
+            bullets = [];
+            enemyBullets = [];
+            invaderSpeed = 50;
+            invaderDirection = 1;
+            
+            createInvaders();
+        }
+
+        // Game loop
+        function gameLoop(currentTime) {
+            const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
+            lastTime = currentTime;
+
+            update(deltaTime);
+            render();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize and start game
+        createInvaders();
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
