@@ -3,40 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Space Invaders</title>
+    <title>Star Wars: Rebel Assault</title>
     <style>
-        body {
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        * {
             margin: 0;
             padding: 0;
-            background: #000;
-            color: #0f0;
-            font-family: 'Courier New', monospace;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: radial-gradient(ellipse at center, #001122 0%, #000000 70%);
+            color: #00ffff;
+            font-family: 'Orbitron', monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite alternate;
+        }
+        
+        @keyframes twinkle {
+            0% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+        
+        .game-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ffd700, #ffff00, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 20px #ffd70080;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { text-shadow: 0 0 20px #ffd70080, 0 0 30px #ffd70060; }
+            to { text-shadow: 0 0 30px #ffd700, 0 0 40px #ffd70080; }
         }
         
         #gameCanvas {
-            border: 2px solid #0f0;
-            background: #000;
-            box-shadow: 0 0 20px #0f0;
+            border: 3px solid;
+            border-image: linear-gradient(45deg, #00ffff, #0080ff, #00ffff) 1;
+            background: rgba(0, 0, 0, 0.8);
+            box-shadow: 
+                0 0 50px rgba(0, 255, 255, 0.3),
+                inset 0 0 50px rgba(0, 128, 255, 0.1);
+            border-radius: 10px;
         }
         
         .game-ui {
-            margin: 10px 0;
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            width: 800px;
+            margin: 15px 0;
+            padding: 0 20px;
         }
         
-        .score {
-            font-size: 24px;
-            margin-bottom: 10px;
+        .score-panel, .lives-panel {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 128, 255, 0.1));
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 10px 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .score, .lives {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
         }
         
         .controls {
-            font-size: 14px;
-            opacity: 0.7;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #80ccff;
+            margin-top: 10px;
+            opacity: 0.8;
         }
         
         .game-over {
@@ -44,111 +110,178 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 32px;
-            color: #f00;
             text-align: center;
             display: none;
-            z-index: 10;
+            z-index: 100;
+            background: linear-gradient(135deg, rgba(255, 0, 0, 0.9), rgba(128, 0, 0, 0.9));
+            border: 3px solid #ff0000;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 0 50px rgba(255, 0, 0, 0.5);
+            backdrop-filter: blur(15px);
+        }
+        
+        .game-over h2 {
+            font-size: 2.5rem;
+            color: #ff4444;
+            margin-bottom: 15px;
+            text-shadow: 0 0 20px #ff0000;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
         
         .game-over button {
-            background: #0f0;
+            background: linear-gradient(45deg, #ffd700, #ffff00);
             color: #000;
             border: none;
-            padding: 10px 20px;
-            font-size: 18px;
-            font-family: inherit;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
             cursor: pointer;
             margin-top: 20px;
-            border-radius: 5px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+            transition: all 0.3s ease;
         }
         
         .game-over button:hover {
-            background: #fff;
+            background: linear-gradient(45deg, #ffff00, #ffd700);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+            transform: translateY(-2px);
+        }
+        
+        .hud-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            height: 30px;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+            border-top: 1px solid rgba(0, 255, 255, 0.3);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
+    <div class="stars" id="starsContainer"></div>
+    
+    <div class="game-title">REBEL ASSAULT</div>
+    
     <div class="game-ui">
-        <div class="score">SCORE: <span id="score">0</span></div>
-        <div class="controls">Use A/D or ←/→ to move, SPACE to shoot</div>
+        <div class="score-panel">
+            <div class="score">SCORE: <span id="score">0</span></div>
+        </div>
+        <div class="lives-panel">
+            <div class="lives">LIVES: <span id="lives">3</span></div>
+        </div>
     </div>
     
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div style="position: relative;">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div class="hud-overlay"></div>
+    </div>
+    
+    <div class="controls">Use A/D or ←/→ to maneuver your X-Wing, SPACE to fire lasers</div>
     
     <div class="game-over" id="gameOver">
-        <div>GAME OVER</div>
-        <div id="finalScore"></div>
-        <button onclick="restartGame()">PLAY AGAIN</button>
+        <h2>MISSION FAILED</h2>
+        <div id="finalScore" style="font-size: 1.3rem; color: #ffff88; margin: 10px 0;"></div>
+        <div style="color: #ffcccc; margin-bottom: 20px;">The Empire has prevailed...</div>
+        <button onclick="restartGame()">RESTART MISSION</button>
     </div>
 
     <script>
+        // Create animated starfield
+        function createStars() {
+            const container = document.getElementById('starsContainer');
+            for (let i = 0; i < 200; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.width = star.style.height = Math.random() * 3 + 1 + 'px';
+                star.style.animationDelay = Math.random() * 2 + 's';
+                container.appendChild(star);
+            }
+        }
+        createStars();
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreElement = document.getElementById('score');
+        const livesElement = document.getElementById('lives');
         const gameOverElement = document.getElementById('gameOver');
         const finalScoreElement = document.getElementById('finalScore');
 
         // Game state
         let gameRunning = true;
         let score = 0;
+        let lives = 3;
         let lastTime = 0;
 
-        // Player
+        // Particle system for effects
+        let particles = [];
+        let explosions = [];
+
+        // Player X-Wing
         const player = {
-            x: canvas.width / 2 - 25,
-            y: canvas.height - 60,
-            width: 50,
-            height: 30,
-            speed: 300,
-            color: '#0f0'
+            x: canvas.width / 2 - 30,
+            y: canvas.height - 80,
+            width: 60,
+            height: 40,
+            speed: 350,
+            trail: []
         };
 
-        // Bullets
-        let bullets = [];
-        let enemyBullets = [];
-        const bulletSpeed = 500;
-        const bulletWidth = 4;
-        const bulletHeight = 10;
+        // Weapons
+        let laserBolts = [];
+        let enemyLasers = [];
+        const laserSpeed = 600;
 
-        // Invaders
-        let invaders = [];
-        const invaderRows = 5;
-        const invaderCols = 10;
-        const invaderWidth = 40;
-        const invaderHeight = 30;
-        let invaderSpeed = 50;
-        let invaderDirection = 1;
-        let invaderDropDistance = 20;
+        // TIE Fighters
+        let tieAgents = [];
+        const tieRows = 5;
+        const tieCols = 8;
+        let tieSpeed = 60;
+        let tieDirection = 1;
+        let waveNumber = 1;
 
         // Input handling
         const keys = {};
-        let canShoot = true;
-        const shootCooldown = 200; // ms
+        let canFire = true;
+        const fireCooldown = 150;
 
-        // Initialize invaders
-        function createInvaders() {
-            invaders = [];
-            for (let row = 0; row < invaderRows; row++) {
-                for (let col = 0; col < invaderCols; col++) {
-                    invaders.push({
-                        x: col * (invaderWidth + 10) + 50,
-                        y: row * (invaderHeight + 10) + 50,
-                        width: invaderWidth,
-                        height: invaderHeight,
+        // Initialize TIE Fighter formation
+        function createTieFormation() {
+            tieAgents = [];
+            for (let row = 0; row < tieRows; row++) {
+                for (let col = 0; col < tieCols; col++) {
+                    tieAgents.push({
+                        x: col * 80 + 60,
+                        y: row * 60 + 50,
+                        width: 50,
+                        height: 40,
                         alive: true,
-                        type: row < 2 ? 'fast' : 'normal'
+                        type: row === 0 ? 'commander' : (row < 3 ? 'elite' : 'standard'),
+                        oscillation: Math.random() * Math.PI * 2,
+                        fireTimer: Math.random() * 3000
                     });
                 }
             }
         }
 
-        // Event listeners
+        // Event handlers
         document.addEventListener('keydown', (e) => {
             keys[e.code] = true;
             if (e.code === 'Space') {
                 e.preventDefault();
-                shoot();
+                fireLasers();
             }
         });
 
@@ -156,211 +289,357 @@
             keys[e.code] = false;
         });
 
-        // Shooting
-        function shoot() {
-            if (canShoot && gameRunning) {
-                bullets.push({
-                    x: player.x + player.width / 2 - bulletWidth / 2,
+        // Fire laser bolts
+        function fireLasers() {
+            if (canFire && gameRunning) {
+                // Dual laser cannons
+                laserBolts.push({
+                    x: player.x + 15,
                     y: player.y,
-                    width: bulletWidth,
-                    height: bulletHeight
+                    width: 4,
+                    height: 15,
+                    speed: laserSpeed
                 });
-                canShoot = false;
-                setTimeout(() => canShoot = true, shootCooldown);
+                laserBolts.push({
+                    x: player.x + 45,
+                    y: player.y,
+                    width: 4,
+                    height: 15,
+                    speed: laserSpeed
+                });
+                canFire = false;
+                setTimeout(() => canFire = true, fireCooldown);
             }
         }
 
-        // Enemy shooting
-        function enemyShoot() {
-            if (Math.random() < 0.002 && invaders.length > 0) {
-                const aliveInvaders = invaders.filter(inv => inv.alive);
-                if (aliveInvaders.length > 0) {
-                    const shooter = aliveInvaders[Math.floor(Math.random() * aliveInvaders.length)];
-                    enemyBullets.push({
-                        x: shooter.x + shooter.width / 2 - bulletWidth / 2,
-                        y: shooter.y + shooter.height,
-                        width: bulletWidth,
-                        height: bulletHeight
-                    });
+        // TIE Fighter AI
+        function tieFireControl() {
+            tieAgents.forEach(tie => {
+                if (tie.alive) {
+                    tie.fireTimer -= 16;
+                    if (tie.fireTimer <= 0 && Math.random() < 0.01) {
+                        enemyLasers.push({
+                            x: tie.x + tie.width / 2 - 2,
+                            y: tie.y + tie.height,
+                            width: 4,
+                            height: 12,
+                            speed: 300
+                        });
+                        tie.fireTimer = Math.random() * 2000 + 1000;
+                    }
                 }
+            });
+        }
+
+        // Create explosion effect
+        function createExplosion(x, y, size = 20) {
+            explosions.push({
+                x: x,
+                y: y,
+                size: size,
+                maxSize: size * 3,
+                life: 1.0,
+                decay: 0.02
+            });
+            
+            // Particle burst
+            for (let i = 0; i < 15; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 400,
+                    vy: (Math.random() - 0.5) * 400,
+                    life: 1.0,
+                    decay: 0.015,
+                    color: Math.random() > 0.5 ? '#ff4400' : '#ffaa00'
+                });
             }
         }
 
-        // Update game objects
+        // Update game state
         function update(deltaTime) {
             if (!gameRunning) return;
 
-            // Update player
+            // Player movement with engine trail
+            let moved = false;
             if ((keys['KeyA'] || keys['ArrowLeft']) && player.x > 0) {
                 player.x -= player.speed * deltaTime;
+                moved = true;
             }
             if ((keys['KeyD'] || keys['ArrowRight']) && player.x < canvas.width - player.width) {
                 player.x += player.speed * deltaTime;
+                moved = true;
             }
 
-            // Update bullets
-            bullets = bullets.filter(bullet => {
-                bullet.y -= bulletSpeed * deltaTime;
-                return bullet.y > -bullet.height;
+            // Engine trail effect
+            if (moved || Math.random() < 0.3) {
+                particles.push({
+                    x: player.x + player.width / 2 + (Math.random() - 0.5) * 20,
+                    y: player.y + player.height,
+                    vx: (Math.random() - 0.5) * 50,
+                    vy: Math.random() * 100 + 50,
+                    life: 0.8,
+                    decay: 0.02,
+                    color: '#00aaff'
+                });
+            }
+
+            // Update laser bolts
+            laserBolts = laserBolts.filter(bolt => {
+                bolt.y -= bolt.speed * deltaTime;
+                return bolt.y > -bolt.height;
             });
 
-            enemyBullets = enemyBullets.filter(bullet => {
-                bullet.y += bulletSpeed * deltaTime;
-                return bullet.y < canvas.height;
+            enemyLasers = enemyLasers.filter(laser => {
+                laser.y += laser.speed * deltaTime;
+                return laser.y < canvas.height;
             });
 
-            // Update invaders
+            // Update TIE Fighters
             let moveDown = false;
-            const aliveInvaders = invaders.filter(inv => inv.alive);
+            const aliveTies = tieAgents.filter(tie => tie.alive);
             
-            if (aliveInvaders.length > 0) {
-                const leftMost = Math.min(...aliveInvaders.map(inv => inv.x));
-                const rightMost = Math.max(...aliveInvaders.map(inv => inv.x + inv.width));
+            if (aliveTies.length > 0) {
+                const leftMost = Math.min(...aliveTies.map(tie => tie.x));
+                const rightMost = Math.max(...aliveTies.map(tie => tie.x + tie.width));
                 
-                if ((rightMost >= canvas.width - 10 && invaderDirection === 1) || 
-                    (leftMost <= 10 && invaderDirection === -1)) {
-                    invaderDirection *= -1;
+                if ((rightMost >= canvas.width - 20 && tieDirection === 1) || 
+                    (leftMost <= 20 && tieDirection === -1)) {
+                    tieDirection *= -1;
                     moveDown = true;
                 }
             }
 
-            invaders.forEach(invader => {
-                if (invader.alive) {
+            tieAgents.forEach(tie => {
+                if (tie.alive) {
+                    tie.oscillation += deltaTime * 3;
                     if (moveDown) {
-                        invader.y += invaderDropDistance;
+                        tie.y += 30;
                     } else {
-                        invader.x += invaderSpeed * invaderDirection * deltaTime;
+                        tie.x += tieSpeed * tieDirection * deltaTime;
+                        tie.y += Math.sin(tie.oscillation) * 0.5; // Subtle bobbing
                     }
                 }
             });
 
-            // Collision detection - bullets vs invaders
-            bullets.forEach((bullet, bulletIndex) => {
-                invaders.forEach((invader, invaderIndex) => {
-                    if (invader.alive && 
-                        bullet.x < invader.x + invader.width &&
-                        bullet.x + bullet.width > invader.x &&
-                        bullet.y < invader.y + invader.height &&
-                        bullet.y + bullet.height > invader.y) {
+            // Combat resolution
+            laserBolts.forEach((bolt, boltIndex) => {
+                tieAgents.forEach((tie, tieIndex) => {
+                    if (tie.alive && 
+                        bolt.x < tie.x + tie.width &&
+                        bolt.x + bolt.width > tie.x &&
+                        bolt.y < tie.y + tie.height &&
+                        bolt.y + bolt.height > tie.y) {
                         
-                        invader.alive = false;
-                        bullets.splice(bulletIndex, 1);
-                        score += invader.type === 'fast' ? 20 : 10;
+                        tie.alive = false;
+                        laserBolts.splice(boltIndex, 1);
+                        createExplosion(tie.x + tie.width/2, tie.y + tie.height/2);
+                        
+                        // Scoring system
+                        const points = tie.type === 'commander' ? 100 : 
+                                     tie.type === 'elite' ? 50 : 25;
+                        score += points;
                         scoreElement.textContent = score;
                     }
                 });
             });
 
-            // Collision detection - enemy bullets vs player
-            enemyBullets.forEach((bullet, bulletIndex) => {
-                if (bullet.x < player.x + player.width &&
-                    bullet.x + bullet.width > player.x &&
-                    bullet.y < player.y + player.height &&
-                    bullet.y + bullet.height > player.y) {
+            // Enemy fire hits player
+            enemyLasers.forEach((laser, laserIndex) => {
+                if (laser.x < player.x + player.width &&
+                    laser.x + laser.width > player.x &&
+                    laser.y < player.y + player.height &&
+                    laser.y + laser.height > player.y) {
                     
+                    enemyLasers.splice(laserIndex, 1);
+                    createExplosion(player.x + player.width/2, player.y + player.height/2, 30);
+                    lives--;
+                    livesElement.textContent = lives;
+                    
+                    if (lives <= 0) {
+                        gameOver();
+                    }
+                }
+            });
+
+            // Check collision with TIE Fighters
+            tieAgents.forEach(tie => {
+                if (tie.alive && tie.y + tie.height >= player.y - 10) {
                     gameOver();
                 }
             });
 
-            // Check if invaders reached player
-            invaders.forEach(invader => {
-                if (invader.alive && invader.y + invader.height >= player.y) {
-                    gameOver();
-                }
+            // TIE Fighter firing
+            tieFireControl();
+
+            // Update particles and explosions
+            particles = particles.filter(p => {
+                p.x += p.vx * deltaTime;
+                p.y += p.vy * deltaTime;
+                p.life -= p.decay;
+                return p.life > 0;
             });
 
-            // Enemy shooting
-            enemyShoot();
+            explosions = explosions.filter(exp => {
+                exp.size += (exp.maxSize - exp.size) * deltaTime * 5;
+                exp.life -= exp.decay;
+                return exp.life > 0;
+            });
 
-            // Check win condition
-            if (invaders.every(inv => !inv.alive)) {
-                // Increase difficulty and spawn new wave
-                invaderSpeed += 20;
-                createInvaders();
-                bullets = [];
-                enemyBullets = [];
+            // Wave completion
+            if (tieAgents.every(tie => !tie.alive)) {
+                waveNumber++;
+                tieSpeed += 25;
+                createTieFormation();
+                laserBolts = [];
+                enemyLasers = [];
             }
         }
 
-        // Render game
+        // Render everything
         function render() {
-            // Clear canvas
-            ctx.fillStyle = '#000';
+            // Space background with nebula effect
+            const gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 0, 
+                                                    canvas.width/2, canvas.height/2, canvas.width);
+            gradient.addColorStop(0, 'rgba(0, 20, 40, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(0, 10, 30, 0.9)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 1)');
+            ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw stars
-            for (let i = 0; i < 50; i++) {
-                const x = (i * 37) % canvas.width;
-                const y = (i * 73) % canvas.height;
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(x, y, 1, 1);
-            }
-
-            // Draw player
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x, player.y, player.width, player.height);
+            // Render X-Wing
+            ctx.save();
+            ctx.translate(player.x + player.width/2, player.y + player.height/2);
             
-            // Draw player details
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(player.x + 20, player.y - 5, 10, 5); // cannon
+            // X-Wing body
+            ctx.fillStyle = '#dddddd';
+            ctx.fillRect(-25, -15, 50, 30);
+            
+            // Wings
+            ctx.fillStyle = '#aaaaaa';
+            ctx.fillRect(-30, -20, 15, 40); // Left wing
+            ctx.fillRect(15, -20, 15, 40);  // Right wing
+            
+            // Engine glow
+            ctx.fillStyle = '#00ccff';
+            ctx.beginPath();
+            ctx.arc(-20, -10, 3, 0, Math.PI * 2);
+            ctx.arc(-20, 10, 3, 0, Math.PI * 2);
+            ctx.arc(20, -10, 3, 0, Math.PI * 2);
+            ctx.arc(20, 10, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
 
-            // Draw bullets
-            ctx.fillStyle = '#ff0';
-            bullets.forEach(bullet => {
-                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            // Render laser bolts
+            laserBolts.forEach(bolt => {
+                ctx.fillStyle = '#00ff00';
+                ctx.shadowColor = '#00ff00';
+                ctx.shadowBlur = 10;
+                ctx.fillRect(bolt.x, bolt.y, bolt.width, bolt.height);
+                ctx.shadowBlur = 0;
             });
 
-            // Draw enemy bullets
-            ctx.fillStyle = '#f0f';
-            enemyBullets.forEach(bullet => {
-                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+            // Render enemy lasers
+            enemyLasers.forEach(laser => {
+                ctx.fillStyle = '#ff0000';
+                ctx.shadowColor = '#ff0000';
+                ctx.shadowBlur = 8;
+                ctx.fillRect(laser.x, laser.y, laser.width, laser.height);
+                ctx.shadowBlur = 0;
             });
 
-            // Draw invaders
-            invaders.forEach(invader => {
-                if (invader.alive) {
-                    ctx.fillStyle = invader.type === 'fast' ? '#f00' : '#0ff';
-                    ctx.fillRect(invader.x, invader.y, invader.width, invader.height);
+            // Render TIE Fighters
+            tieAgents.forEach(tie => {
+                if (tie.alive) {
+                    ctx.save();
+                    ctx.translate(tie.x + tie.width/2, tie.y + tie.height/2);
                     
-                    // Draw invader details
-                    ctx.fillStyle = '#fff';
-                    ctx.fillRect(invader.x + 10, invader.y + 8, 6, 6); // left eye
-                    ctx.fillRect(invader.x + 24, invader.y + 8, 6, 6); // right eye
-                    ctx.fillRect(invader.x + 16, invader.y + 20, 8, 4); // mouth
+                    // TIE Fighter colors by rank
+                    const color = tie.type === 'commander' ? '#ff4444' : 
+                                 tie.type === 'elite' ? '#ffaa00' : '#888888';
+                    
+                    // Central pod
+                    ctx.fillStyle = color;
+                    ctx.fillRect(-15, -10, 30, 20);
+                    
+                    // Solar panels
+                    ctx.fillStyle = '#444444';
+                    ctx.fillRect(-25, -15, 10, 30); // Left panel
+                    ctx.fillRect(15, -15, 10, 30);  // Right panel
+                    
+                    // Cockpit window
+                    ctx.fillStyle = '#002200';
+                    ctx.fillRect(-8, -5, 16, 10);
+                    
+                    ctx.restore();
                 }
             });
+
+            // Render particles
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x - 1, p.y - 1, 2, 2);
+                ctx.restore();
+            });
+
+            // Render explosions
+            explosions.forEach(exp => {
+                ctx.save();
+                ctx.globalAlpha = exp.life;
+                const gradient = ctx.createRadialGradient(exp.x, exp.y, 0, exp.x, exp.y, exp.size);
+                gradient.addColorStop(0, '#ffff88');
+                gradient.addColorStop(0.3, '#ff8800');
+                gradient.addColorStop(0.7, '#ff2200');
+                gradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(exp.x, exp.y, exp.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // HUD elements
+            ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, 2);
+            ctx.fillRect(0, canvas.height - 2, canvas.width, 2);
         }
 
         // Game over
         function gameOver() {
             gameRunning = false;
-            finalScoreElement.textContent = `Final Score: ${score}`;
+            finalScoreElement.textContent = `Final Score: ${score} | Wave: ${waveNumber}`;
             gameOverElement.style.display = 'block';
         }
 
-        // Restart game
+        // Restart mission
         function restartGame() {
             gameRunning = true;
             score = 0;
+            lives = 3;
+            waveNumber = 1;
             scoreElement.textContent = score;
+            livesElement.textContent = lives;
             gameOverElement.style.display = 'none';
             
-            // Reset player
-            player.x = canvas.width / 2 - 25;
-            player.y = canvas.height - 60;
+            player.x = canvas.width / 2 - 30;
+            player.y = canvas.height - 80;
             
-            // Reset game objects
-            bullets = [];
-            enemyBullets = [];
-            invaderSpeed = 50;
-            invaderDirection = 1;
+            laserBolts = [];
+            enemyLasers = [];
+            particles = [];
+            explosions = [];
+            tieSpeed = 60;
+            tieDirection = 1;
             
-            createInvaders();
+            createTieFormation();
         }
 
         // Game loop
         function gameLoop(currentTime) {
-            const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
+            const deltaTime = (currentTime - lastTime) / 1000;
             lastTime = currentTime;
 
             update(deltaTime);
@@ -369,8 +648,8 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // Initialize and start game
-        createInvaders();
+        // Initialize
+        createTieFormation();
         requestAnimationFrame(gameLoop);
     </script>
 </body>
