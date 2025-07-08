@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Margaret's Support Chat Prototype</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <section id="chat-container" aria-label="Support Chat">
+      <header>
+        <h1>Support Chat</h1>
+        <span id="progress-indicator" aria-live="polite"></span>
+      </header>
+      <div id="chat-history" tabindex="0" aria-live="polite"></div>
+      <form id="chat-form" autocomplete="off">
+        <input
+          id="chat-input"
+          type="text"
+          placeholder="Type your message here…"
+          aria-label="Type your message"
+          maxlength="200"
+          required
+        />
+        <button type="submit" id="send-btn">Send</button>
+      </form>
+      <button id="escalate-btn" aria-label="Request human help">Speak to a Human</button>
+      <div id="callback-options" style="display:none;">
+        <p>Would you like a callback?</p>
+        <button id="callback-now-btn">Call me now</button>
+        <button id="callback-later-btn">Schedule for later</button>
+        <div id="schedule-picker" style="display:none; margin-top: 8px;">
+          <label for="callback-datetime" style="font-size:1rem;">Select date and time:</label>
+          <input type="datetime-local" id="callback-datetime" name="callback-datetime" style="font-size:1rem; margin: 0 8px;">
+          <button id="confirm-schedule-btn" style="font-size:1rem;">Confirm</button>
+        </div>
+      </div>
+      <button id="download-summary-btn" aria-label="Download chat summary">Download Chat Summary</button>
+    </section>
+    <aside id="module-description">
+      <button id="toggle-description-btn" aria-expanded="true" aria-controls="module-description-content" style="width:100%;text-align:left;font-size:1.1em;padding:8px 0 8px 0;background:none;border:none;color:#1976d2;cursor:pointer;outline:none;display:flex;align-items:center;gap:8px;">
+        <span id="toggle-description-icon">▼</span> About This Support Module
+      </button>
+      <button id="toggle-description-icon-btn" aria-label="Show About This Support Module" style="display:none;justify-content:center;align-items:center;width:40px;height:40px;border-radius:50%;border:none;background:#e3f0fa;color:#1976d2;font-size:1.5em;cursor:pointer;outline:none;margin:8px auto 0 auto;">
+        ℹ️
+      </button>
+      <div id="module-description-content">
+        <ul>
+          <li><strong>Emotion-aware escalation:</strong> If you type messages like “I think I’ve been scammed” or “my account is locked”, the system will automatically detect urgency and connect you to a real person.</li>
+          <li><strong>Speak to a Human:</strong> Click the <em>Speak to a Human</em> button at any time to request immediate help from a support agent, no matter what you’ve typed.</li>
+          <li><strong>Visible wait timer:</strong> When escalation is triggered, you’ll see a message like “A real person will join within 5 minutes” and a live countdown until the agent joins.</li>
+          <li><strong>Glossary tooltips:</strong> Hover or tap on highlighted words such as <span class="glossary-term">chargeback</span>, <span class="glossary-term">hold</span>, or <span class="glossary-term">verification</span> in the chat to see simple explanations.</li>
+          <li><strong>Callback options:</strong> After escalation, you can choose “Call me now” for an instant callback, or “Schedule for later” to pick a convenient time.</li>
+        </ul>
+      </div>
+    </aside>
+    <div id="glossary-tooltip" role="tooltip" style="display:none;"></div>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
